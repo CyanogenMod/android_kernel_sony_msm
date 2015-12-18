@@ -66,6 +66,8 @@ else ifdef CONFIG_MACH_SONY_CASTOR
 	obj-$(CONFIG_MACH_SONY_CASTOR) += board-sony_shinano_castor-gpiomux.o bms-batterydata-castor.o
 else ifdef CONFIG_MACH_SONY_LEO
 	obj-$(CONFIG_MACH_SONY_LEO) += board-sony_shinano_leo-gpiomux.o bms-batterydata-leo.o
+else ifdef CONFIG_MACH_SONY_LEO_DSDS
+	obj-$(CONFIG_MACH_SONY_LEO_DSDS) += board-sony_shinano_leo_dsds-gpiomux.o bms-batterydata-leo.o
 else ifdef CONFIG_MACH_SONY_ARIES
 	obj-$(CONFIG_MACH_SONY_ARIES) += board-sony_shinano_aries-gpiomux.o bms-batterydata-aries.o
 else ifdef CONFIG_MACH_SONY_SCORPION
