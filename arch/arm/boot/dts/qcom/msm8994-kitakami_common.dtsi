@@ -102,6 +102,7 @@
 	/* I2C : BLSP2 */
 	i2c@f9924000 {
 		qcom,clk-freq-out = <355000>;
+		qcom,disable-dma;
 		pinctrl-0 = <&msm_gpio_6_act &msm_gpio_7_act>;
 		pinctrl-1 = <&msm_gpio_6_sus &msm_gpio_7_sus>;
 		status = "ok";
@@ -214,7 +215,7 @@
 
 	/* I2C : BLSP11 */
 	i2c@f9967000 {
-		qcom,clk-freq-out = <355000>;
+		qcom,clk-freq-out = <400000>;
 		pinctrl-0 = <&msm_gpio_83_act &msm_gpio_84_act>;
 		pinctrl-1 = <&msm_gpio_83_sus &msm_gpio_84_sus>;
 		status = "ok";
@@ -1100,6 +1101,40 @@
 
 &spmi_bus {
 	qcom,pmi8994@3 {
+		qcom,leds@d000 {
+			qcom,rgb_0 {
+				qcom,start-idx = <1>;
+				qcom,ramp-step-ms = <120>;
+				qcom,duty-pcts = [00 00 00 00 00
+						00 00 00 00 00
+						50 00 00 00 00
+						00 00 00 00 00
+						00];
+				qcom,use-blink;
+			};
+
+			qcom,rgb_1 {
+				qcom,start-idx = <1>;
+				qcom,ramp-step-ms = <120>;
+				qcom,duty-pcts = [00 00 00 00 00
+						00 00 00 00 00
+						50 00 00 00 00
+						00 00 00 00 00
+						00];
+				qcom,use-blink;
+			};
+
+			qcom,rgb_2 {
+				qcom,start-idx = <1>;
+				qcom,ramp-step-ms = <120>;
+				qcom,duty-pcts = [00 00 00 00 00
+						00 00 00 00 00
+						50 00 00 00 00
+						00 00 00 00 00
+						00];
+				qcom,use-blink;
+			};
+		};
 		qcom,leds@d300 {
 			status = "disabled";
 		};
