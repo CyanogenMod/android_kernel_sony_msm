@@ -330,6 +330,9 @@ struct sdhci_msm_pltfm_data {
 	enum pm_qos_req_type cpu_affinity_type;
 	u32 *cpu_affinity_mask;
 	unsigned int cpu_affinity_mask_tbl_sz;
+#ifdef CONFIG_WIFI_CONTROL_FUNC
+	bool use_for_wifi;
+#endif
 };
 
 struct sdhci_msm_bus_vote {
@@ -1712,6 +1715,11 @@ struct sdhci_msm_pltfm_data *sdhci_msm_populate_pdata(struct device *dev,
 		pdata->mpm_sdiowakeup_int = mpm_int;
 	else
 		pdata->mpm_sdiowakeup_int = -1;
+
+#ifdef CONFIG_WIFI_CONTROL_FUNC
+	if (of_get_property(np, "somc,use-for-wifi", NULL))
+		pdata->use_for_wifi = true;
+#endif
 
 	sdhci_msm_populate_affinity(dev, pdata, np);
 
@@ -3194,6 +3202,8 @@ static void sdhci_set_default_hw_caps(struct sdhci_msm_host *msm_host,
 	msm_host->caps_0 = caps;
 }
 
+extern void somc_wifi_mmc_host_register(struct mmc_host *host);
+
 static int sdhci_msm_probe(struct platform_device *pdev)
 {
 	struct sdhci_host *host;
@@ -3556,6 +3566,13 @@ static int sdhci_msm_probe(struct platform_device *pdev)
 		goto free_cd_gpio;
 	}
 
+#ifdef CONFIG_WIFI_CONTROL_FUNC
+	if (msm_host->pdata->use_for_wifi) {
+		msm_host->mmc->caps &= ~MMC_CAP_NEEDS_POLL;
+		somc_wifi_mmc_host_register(msm_host->mmc);
+	}
+#endif
+
 	msm_host->msm_bus_vote.max_bus_bw.show = show_sdhci_max_bus_bw;
 	msm_host->msm_bus_vote.max_bus_bw.store = store_sdhci_max_bus_bw;
 	sysfs_attr_init(&msm_host->msm_bus_vote.max_bus_bw.attr);
@@ -3795,12 +3812,16 @@ skip_enable_host_irq:
 static int sdhci_msm_suspend(struct device *dev)
 {
 	struct sdhci_host *host = dev_get_drvdata(dev);
+#ifndef CONFIG_MMC_BLOCK_DEFERRED_RESUME
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
 	struct sdhci_msm_host *msm_host = pltfm_host->priv;
+#endif
 	int ret = 0;
 
+#ifndef CONFIG_MMC_BLOCK_DEFERRED_RESUME
 	if (gpio_is_valid(msm_host->pdata->status_gpio))
 		mmc_gpio_free_cd(msm_host->mmc);
+#endif
 
 	if (pm_runtime_suspended(dev)) {
 		pr_debug("%s: %s: already runtime suspended\n",
@@ -3816,10 +3837,13 @@ out:
 static int sdhci_msm_resume(struct device *dev)
 {
 	struct sdhci_host *host = dev_get_drvdata(dev);
+#ifndef CONFIG_MMC_BLOCK_DEFERRED_RESUME
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
 	struct sdhci_msm_host *msm_host = pltfm_host->priv;
+#endif
 	int ret = 0;
 
+#ifndef CONFIG_MMC_BLOCK_DEFERRED_RESUME
 	if (gpio_is_valid(msm_host->pdata->status_gpio)) {
 		ret = mmc_gpio_request_cd(msm_host->mmc,
 				msm_host->pdata->status_gpio);
@@ -3827,6 +3851,7 @@ static int sdhci_msm_resume(struct device *dev)
 			pr_err("%s: %s: Failed to request card detection IRQ %d\n",
 					mmc_hostname(host->mmc), __func__, ret);
 	}
+#endif
 
 	if (pm_runtime_suspended(dev)) {
 		pr_debug("%s: %s: runtime suspended, defer system resume\n",

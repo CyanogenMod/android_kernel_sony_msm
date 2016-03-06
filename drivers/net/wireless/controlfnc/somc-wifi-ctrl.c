@@ -22,13 +22,18 @@
 #include <linux/delay.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/msm_pcie.h>
+#include <linux/mmc/host.h>
 #include <linux/platform_device.h>
 #include <linux/of_gpio.h>
 #include <linux/module.h>
 #include <linux/fs.h>
-#if defined(CONFIG_BCMDHD_SDIO)
-#include <asm/mach/mmc.h>
+#include "dhd_custom_memprealloc.h"
+
+#if defined(CONFIG_MACH_SONY_SHINANO)
 #include <../drivers/mmc/host/msm_sdcc.h>
+
+#define WIFI_POWER_PMIC_GPIO 18
+#define WIFI_IRQ_GPIO 67
 
 static unsigned int g_wifi_detect;
 static void *sdc_dev;
@@ -37,169 +42,7 @@ static void *wifi_mmc_host;
 static struct regulator *wifi_batfet;
 static int batfet_ena;
 extern void sdio_ctrl_power(struct mmc_host *card, bool onoff);
-#endif
 
-static char *intf_macaddr = NULL;
-
-
-#define WIFI_POWER_PMIC_GPIO 18
-#define WIFI_IRQ_GPIO 67
-
-/* These definitions need to be aligned with bcmdhd */
-#define WLAN_STATIC_SCAN_BUF 5
-#define WLAN_STATIC_DHD_INFO_BUF 7
-#define WLAN_STATIC_DHD_IF_FLOW_LKUP 9
-#define WLAN_STATIC_DHD_PKTID_MAP 12
-
-#define ESCAN_BUF_SIZE (64 * 1024) /* for WIPHY_ESCAN0 */
-#define PREALLOC_WLAN_SEC_NUM 4
-#define PREALLOC_WLAN_BUF_NUM 160
-#define PREALLOC_WLAN_SECTION_HEADER 24
-
-#define WLAN_DHD_INFO_BUF_SIZE (24 * 1024)
-#define WLAN_DHD_IF_FLOW_LKUP_SIZE (36 * 1024)
-
-#define DHD_PKTIDMAP_FIFO_MAX 4
-#define WLAN_MAX_PKTID_ITEMS (8192)
-#define WLAN_DHD_PKTID_MAP_HDR_SIZE (20 + 4 * (WLAN_MAX_PKTID_ITEMS + 1))
-#define WLAN_DHD_PKTID_MAP_ITEM_SIZE (48)
-#define WLAN_DHD_PKTID_MAP_SIZE (WLAN_DHD_PKTID_MAP_HDR_SIZE + \
-	(DHD_PKTIDMAP_FIFO_MAX * (WLAN_MAX_PKTID_ITEMS + 1) * \
-	WLAN_DHD_PKTID_MAP_ITEM_SIZE))
-
-#define WLAN_SECTION_SIZE_0 (PREALLOC_WLAN_BUF_NUM * 128)  /* for PROT */
-#define WLAN_SECTION_SIZE_1 0                              /* for RXBUF */
-#define WLAN_SECTION_SIZE_2 0                              /* for DATABUF */
-#define WLAN_SECTION_SIZE_3 (PREALLOC_WLAN_BUF_NUM * 1024) /* for OSL_BUF */
-
-/* These definitions are copied from bcmdhd */
-#define DHD_SKB_1PAGE_BUFSIZE (PAGE_SIZE * 1)
-#define DHD_SKB_2PAGE_BUFSIZE (PAGE_SIZE * 2)
-#define DHD_SKB_4PAGE_BUFSIZE (PAGE_SIZE * 4)
-
-#define DHD_SKB_1PAGE_BUF_NUM 0
-#define DHD_SKB_2PAGE_BUF_NUM 64
-#define DHD_SKB_4PAGE_BUF_NUM 0
-
-#define WLAN_SKB_1_2PAGE_BUF_NUM ((DHD_SKB_1PAGE_BUF_NUM) + \
-	(DHD_SKB_2PAGE_BUF_NUM))
-#define WLAN_SKB_BUF_NUM ((WLAN_SKB_1_2PAGE_BUF_NUM) + \
-	(DHD_SKB_4PAGE_BUF_NUM))
-
-static struct sk_buff *wlan_static_skb[WLAN_SKB_BUF_NUM];
-
-struct wifi_mem_prealloc {
-	void *mem_ptr;
-	unsigned long size;
-};
-
-static struct wifi_mem_prealloc wifi_mem_array[PREALLOC_WLAN_SEC_NUM] = {
-	{ NULL, (WLAN_SECTION_SIZE_0 + PREALLOC_WLAN_SECTION_HEADER) },
-	{ NULL, (WLAN_SECTION_SIZE_1 + PREALLOC_WLAN_SECTION_HEADER) },
-	{ NULL, (WLAN_SECTION_SIZE_2 + PREALLOC_WLAN_SECTION_HEADER) },
-	{ NULL, (WLAN_SECTION_SIZE_3 + PREALLOC_WLAN_SECTION_HEADER) }
-};
-
-struct bcmdhd_platform_data {
-	struct platform_device *pdev;
-	struct pinctrl *pinctrl;
-	struct pinctrl_state *gpio_state_active;
-	struct pinctrl_state *gpio_state_suspend;
-	unsigned int wlan_reg_on;
-	unsigned int pci_number;
-};
-
-static struct bcmdhd_platform_data *bcmdhd_data;
-
-static void *wlan_static_scan_buf;
-static void *wlan_static_dhd_info_buf;
-static void *wlan_static_if_flow_lkup;
-static void *wlan_static_dhd_pktid_map;
-
-
-static int somc_wifi_init_mem(void)
-{
-	int i;
-	for (i = 0; i < WLAN_SKB_BUF_NUM; i++)
-		wlan_static_skb[i] = NULL;
-
-	for (i = 0; i < DHD_SKB_1PAGE_BUF_NUM; i++) {
-		wlan_static_skb[i] = dev_alloc_skb(DHD_SKB_1PAGE_BUFSIZE);
-		if (!wlan_static_skb[i])
-			goto err_skb_alloc;
-	}
-
-	for (i = DHD_SKB_1PAGE_BUF_NUM; i < WLAN_SKB_1_2PAGE_BUF_NUM; i++) {
-		wlan_static_skb[i] = dev_alloc_skb(DHD_SKB_2PAGE_BUFSIZE);
-		if (!wlan_static_skb[i])
-			goto err_skb_alloc;
-	}
-
-	for (i = 0; i < PREALLOC_WLAN_SEC_NUM; i++) {
-		if (wifi_mem_array[i].size > 0) {
-			wifi_mem_array[i].mem_ptr =
-				kzalloc(wifi_mem_array[i].size, GFP_KERNEL);
-
-			if (!wifi_mem_array[i].mem_ptr)
-				goto err_mem_alloc;
-		}
-	}
-
-	wlan_static_scan_buf = kzalloc(ESCAN_BUF_SIZE, GFP_KERNEL);
-	if (!wlan_static_scan_buf) {
-		printk("%s: failed to allocate wlan_static_scan_buf\n",
-			__func__);
-		goto err_mem_alloc;
-	}
-
-	wlan_static_dhd_info_buf = kzalloc(WLAN_DHD_INFO_BUF_SIZE, GFP_KERNEL);
-	if (!wlan_static_dhd_info_buf) {
-		printk("%s: failed to allocate wlan_static_dhd_info_buf\n",
-			__func__);
-		goto err_mem_alloc;
-	}
-
-	wlan_static_if_flow_lkup = kzalloc(WLAN_DHD_IF_FLOW_LKUP_SIZE,
-		GFP_KERNEL);
-	if (!wlan_static_if_flow_lkup) {
-		printk("%s: failed to allocate wlan_static_if_flow_lkup\n",
-			__func__);
-		goto err_mem_alloc;
-	}
-	wlan_static_dhd_pktid_map = kzalloc(WLAN_DHD_PKTID_MAP_SIZE,
-		GFP_KERNEL);
-	if (!wlan_static_dhd_pktid_map) {
-		printk("%s: failed to allocate wlan_static_dhd_pktid_map\n",
-			__func__);
-		goto err_mem_alloc;
-	}
-
-	printk("%s: Wi-Fi static memory allocated\n", __func__);
-	return 0;
-
-err_mem_alloc:
-	kzfree(wlan_static_dhd_pktid_map);
-	kzfree(wlan_static_if_flow_lkup);
-	kzfree(wlan_static_dhd_info_buf);
-	kzfree(wlan_static_scan_buf);
-	printk("%s: failed to allocate mem_alloc\n", __func__);
-	for (i--; i >= 0; i--) {
-		kzfree(wifi_mem_array[i].mem_ptr);
-		wifi_mem_array[i].mem_ptr = NULL;
-	}
-
-	i = WLAN_SKB_BUF_NUM;
-err_skb_alloc:
-	printk(KERN_ERR "%s: failed to allocate skb_alloc\n", __func__);
-	for (i--; i >= 0; i--) {
-		dev_kfree_skb(wlan_static_skb[i]);
-		wlan_static_skb[i] = NULL;
-	}
-
-	return -ENOMEM;
-}
-
-#if defined(CONFIG_BCMDHD_SDIO)
 int wcf_status_register(void (*cb)(int card_present, void *dev), void *dev)
 {
 	pr_info("%s\n", __func__);
@@ -219,55 +62,35 @@ unsigned int wcf_status(struct device *dev)
 	pr_info("%s: wifi_detect = %d\n", __func__, g_wifi_detect);
 	return g_wifi_detect;
 }
+
+static int somc_wifi_set_reset(int on)
+{
+	return 0;
+}
 #endif
 
-static void *somc_wifi_mem_prealloc(int section, unsigned long size)
+static char *intf_macaddr = NULL;
+static struct mmc_host *wlan_mmc_host;
+
+struct bcmdhd_platform_data {
+	struct platform_device *pdev;
+	struct pinctrl *pinctrl;
+	struct pinctrl_state *gpio_state_active;
+	struct pinctrl_state *gpio_state_suspend;
+	unsigned int wlan_reg_on;
+	unsigned int pci_number;
+};
+
+static struct bcmdhd_platform_data *bcmdhd_data;
+
+void somc_wifi_mmc_host_register(struct mmc_host *host)
 {
-	if (section == PREALLOC_WLAN_SEC_NUM)
-		return wlan_static_skb;
-	if (section == WLAN_STATIC_SCAN_BUF)
-		return wlan_static_scan_buf;
-
-	if (section == WLAN_STATIC_DHD_INFO_BUF) {
-		if (size > WLAN_DHD_INFO_BUF_SIZE) {
-			printk("%s: request DHD_INFO size(%lu) is bigger than"
-				" static size(%d).\n", __func__, size,
-				WLAN_DHD_INFO_BUF_SIZE);
-			return NULL;
-		}
-		return wlan_static_dhd_info_buf;
-	}
-
-	if (section == WLAN_STATIC_DHD_IF_FLOW_LKUP)  {
-		if (size > WLAN_DHD_IF_FLOW_LKUP_SIZE) {
-			printk("%s: request DHD_IF_FLOW size(%lu) is bigger"
-				" than static size(%d).\n", __func__, size,
-				WLAN_DHD_IF_FLOW_LKUP_SIZE);
-			return NULL;
-		}
-		return wlan_static_if_flow_lkup;
-	}
-
-	if (section == WLAN_STATIC_DHD_PKTID_MAP)  {
-		if (size > WLAN_DHD_PKTID_MAP_SIZE) {
-			printk("%s: request DHD_PKTID size(%lu) is"
-				" bigger than static size(%d).\n", __func__,
-				size, WLAN_DHD_PKTID_MAP_SIZE);
-			return NULL;
-		}
-		return wlan_static_dhd_pktid_map;
-	}
-
-	if ((section < 0) || (section > PREALLOC_WLAN_SEC_NUM))
-		return NULL;
-	if (size > wifi_mem_array[section].size)
-		return NULL;
-	return wifi_mem_array[section].mem_ptr;
+        wlan_mmc_host = host;
 }
 
 int somc_wifi_set_power(int on)
 {
-#if defined(CONFIG_BCMDHD_SDIO)
+#if defined(CONFIG_MACH_SONY_SHINANO)
 	int gpio = qpnp_pin_map("pm8941-gpio", WIFI_POWER_PMIC_GPIO);
 	int ret;
 
@@ -304,14 +127,11 @@ int somc_wifi_set_power(int on)
 
 }
 
-static int somc_wifi_set_reset(int on)
-{
-	return 0;
-}
 
 int somc_wifi_set_carddetect(int present)
 {
 #if defined(CONFIG_BCMDHD_SDIO)
+#if defined(CONFIG_MACH_SONY_SHINANO)
 	g_wifi_detect = present;
 
 	if (sdc_status_cb)
@@ -319,6 +139,11 @@ int somc_wifi_set_carddetect(int present)
 	else
 		printk(KERN_WARNING "%s: Nobody to notify\n", __func__);
 	return 0;
+#else
+	if (wlan_mmc_host)
+		mmc_detect_change(wlan_mmc_host, 0);
+	return 0;
+#endif
 #else
 	int ret = 0;
 	if (present)
@@ -601,6 +426,19 @@ static ssize_t macaddr_store(struct device *dev, struct device_attribute *attr,
 
 DEVICE_ATTR(macaddr, 0644, macaddr_show, macaddr_store);
 
+struct wifi_platform_data somc_wifi_control = {
+	.set_power	= somc_wifi_set_power,
+#if defined(CONFIG_MACH_SONY_SHINANO)
+	.set_reset	= somc_wifi_set_reset,
+#endif
+	.set_carddetect	= somc_wifi_set_carddetect,
+	.mem_prealloc	= dhd_wlan_mem_prealloc,
+	.get_mac_addr	= somc_wifi_get_mac_addr,
+};
+
+EXPORT_SYMBOL(somc_wifi_control);
+
+#if defined(CONFIG_MACH_SONY_SHINANO)
 static struct attribute *wifi_attrs[] = {
 	&dev_attr_macaddr.attr,
 	NULL
@@ -610,19 +448,6 @@ static struct attribute_group wifi_attr_grp = {
 	.attrs = wifi_attrs,
 };
 
-struct wifi_platform_data somc_wifi_control = {
-	.set_power	= somc_wifi_set_power,
-#if defined(CONFIG_BCMDHD_SDIO)
-	.set_reset	= somc_wifi_set_reset,
-#endif
-	.set_carddetect	= somc_wifi_set_carddetect,
-	.mem_prealloc	= somc_wifi_mem_prealloc,
-	.get_mac_addr	= somc_wifi_get_mac_addr,
-};
-
-EXPORT_SYMBOL(somc_wifi_control);
-
-#if defined(CONFIG_BCMDHD_SDIO)
 static struct resource somc_wifi_resources[] = {
 	[0] = {
 		.name	= "bcmdhd_wlan_irq",
@@ -642,13 +467,9 @@ static struct platform_device somc_wifi = {
 		.platform_data = &somc_wifi_control,
 	},
 };
-#endif
 
 static int __init somc_wifi_init_on_boot(void)
 {
-	if (somc_wifi_init_mem())
-		return -ENOMEM;
-#if defined(CONFIG_BCMDHD_SDIO)
 	somc_wifi.resource->start = gpio_to_irq(WIFI_IRQ_GPIO);
 	somc_wifi.resource->end = gpio_to_irq(WIFI_IRQ_GPIO);
 	platform_device_register(&somc_wifi);
@@ -658,10 +479,10 @@ static int __init somc_wifi_init_on_boot(void)
 		pr_err("%s: Unable to create sysfs\n", __func__);
 		kfree(intf_macaddr);
 	}
-#endif
 	return 0;
 }
 
 device_initcall(somc_wifi_init_on_boot);
+#endif
 
 MODULE_LICENSE("GPL v2");
