@@ -14,12 +14,15 @@
 /dts-v1/;
 
 #include "msm8926-v1.dtsi"
-#include "msm8226-yukon_seagull-720p-mtp.dtsi"
-/* #include "msm8226-yukon_seagull-camera-sensor.dtsi" */
+#include "msm8926-yukon_common.dtsi"
+#include "msm8926-yukon_seagull.dtsi"
+/* #include "msm8926-yukon_seagull_camera.dtsi" */
+#include "dsi-panel-fih_common.dtsi"
 
 
 / {
 	model = "Qualcomm MSM 8926 MTP";
-	compatible = "qcom,msm8926-mtp", "qcom,msm8926", "qcom,mtp", "somc,seagull";
+	compatible = "qcom,msm8926-mtp", "qcom,msm8926", "qcom,mtp",
+			"somc,seagull", "somc,fih-board";
 	qcom,board-id = <8 0>;
 };

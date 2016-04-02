@@ -11,9 +11,6 @@
  * GNU General Public License for more details.
  */
 
-#include "msm8226-yukon_common.dtsi"
-#include "dsi-panel-fih_common.dtsi"
-
 / {
 	aliases {
 		/delete-property/ spi0;
@@ -439,6 +436,7 @@
 
 &mdss_dsi0 {
 	qcom,platform-enable-gpio = <&msmgpio 52 0>;
+	qcom,platform-reset-gpio = <&msmgpio 25 0>;
 	qcom,dsi-pref-prim-pan = <&dsi_nt35521_720_vid_truly63>;
 };
 
