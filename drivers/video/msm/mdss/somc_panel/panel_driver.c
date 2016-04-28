@@ -37,6 +37,8 @@
 #include "../mdss_dsi.h"
 #include "somc_panels.h"
 
+#include "../mdss_livedisplay.h"
+
 #define DT_CMD_HDR 		  6
 #define MIN_REFRESH_RATE	  30
 #define DEFAULT_MDP_TRANSFER_TIME 14000
@@ -1411,6 +1413,9 @@ set_fps:
 						&spec_pdata->fps_cmds);
 		}
 	}
+
+	mdss_livedisplay_update(ctrl_pdata, MODE_UPDATE_ALL);
+
 end:
 	pinfo->blank_state = MDSS_PANEL_BLANK_UNBLANK;
 #ifdef CONFIG_MACH_SONY_YUKON
@@ -2243,7 +2248,7 @@ static void mdss_dsi_parse_trigger(struct device_node *np, char *trigger,
 }
 
 
-static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
+int mdss_dsi_parse_dcs_cmds(struct device_node *np,
 		struct dsi_panel_cmds *pcmds, char *cmd_key, char *link_key)
 {
 	const char *data;
@@ -3954,6 +3959,8 @@ int mdss_panel_parse_dt(struct device_node *np,
 
 	spec_pdata->postpwron_no_reset_quirk = of_property_read_bool(
 			parent, "somc,postpwron-no-reset-quirk");
+
+	mdss_livedisplay_parse_dt(np, pinfo);
 
 	return 0;
 
