@@ -50,8 +50,7 @@
 				15 01 00 00 01 00 02 55 00
 				15 01 00 00 01 00 02 53 00
 				15 01 00 00 01 00 02 35 00
-				39 01 00 00 01 00 02 51 ff
-				05 01 00 00 01 00 02 29 00];
+				39 01 00 00 01 00 02 51 ff];
 		qcom,mdss-dsi-off-command = [05 01 00 00 14 00 01 28
 				05 01 00 00 50 00 01 10];
 		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
@@ -327,6 +326,17 @@
 			0x00 0xDF 0x04 0x07 0x00 0x03 0x8000 0x8000 0x8000
 			0x00 0xE0 0x00 0x03 0x00 0x03 0x8000 0x8000 0x8000
 			0xFF 0x00 0x00 0x3B 0x00 0x3B 0x8000 0x8000 0x8000>;
+
+                cm,mdss-livedisplay-cabc-cmd = [
+                        15 01 00 00 10 00 02 55 00];
+                cm,mdss-livedisplay-cabc-ui-value = <0x01>;
+                cm,mdss-livedisplay-cabc-image-value = <0x02>;
+                cm,mdss-livedisplay-cabc-video-value = <0x03>;
+                cm,mdss-livedisplay-sre-weak-value = <0x50>;
+                cm,mdss-livedisplay-sre-medium-value = <0x60>;
+                cm,mdss-livedisplay-sre-strong-value = <0x70>;
+                cm,mdss-livedisplay-post-cmd = [
+                        05 01 00 00 10 00 02 29 00];
 	};
 
 	dsi_default_gpio_1: somc,default_panel_1 {
@@ -366,8 +376,7 @@
 				15 01 00 00 01 00 02 55 00
 				15 01 00 00 01 00 02 53 00
 				15 01 00 00 01 00 02 35 00
-				39 01 00 00 01 00 02 51 ff
-				05 01 00 00 01 00 02 29 00];
+				39 01 00 00 01 00 02 51 ff];
 		qcom,mdss-dsi-off-command = [05 01 00 00 14 00 01 28
 				05 01 00 00 50 00 01 10];
 		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
@@ -644,5 +653,16 @@
 			0x00 0xDF 0x04 0x07 0x00 0x03 0x8000 0x8000 0x8000
 			0x00 0xE0 0x00 0x03 0x00 0x03 0x8000 0x8000 0x8000
 			0xFF 0x00 0x00 0x3B 0x00 0x3B 0x8000 0x8000 0x8000>;
+
+                cm,mdss-livedisplay-cabc-cmd = [
+                        15 01 00 00 10 00 02 55 00];
+                cm,mdss-livedisplay-cabc-ui-value = <0x01>;
+                cm,mdss-livedisplay-cabc-image-value = <0x02>;
+                cm,mdss-livedisplay-cabc-video-value = <0x03>;
+                cm,mdss-livedisplay-sre-weak-value = <0x50>;
+                cm,mdss-livedisplay-sre-medium-value = <0x60>;
+                cm,mdss-livedisplay-sre-strong-value = <0x70>;
+                cm,mdss-livedisplay-post-cmd = [
+                        05 01 00 00 10 00 02 29 00];
 	};
 };
