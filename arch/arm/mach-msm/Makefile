@@ -47,13 +47,13 @@ obj-$(CONFIG_ARCH_MSMVPIPA) += board-vpipa.o
 obj-$(CONFIG_MSM_PM) += ext-buck-control.o
 
 ifdef CONFIG_MACH_SONY_FLAMINGO
-	obj-$(CONFIG_MACH_SONY_FLAMINGO) += board-sony_yukon_flamingo-gpiomux.o bms-batterydata-flamingo.o
+	obj-$(CONFIG_MACH_SONY_FLAMINGO) += board-sony_yukon_flamingo-gpiomux.o
 else ifdef CONFIG_MACH_SONY_EAGLE
-        obj-$(CONFIG_MACH_SONY_EAGLE) += board-sony_yukon_eagle-gpiomux.o bms-batterydata-eagle.o
+        obj-$(CONFIG_MACH_SONY_EAGLE) += board-sony_yukon_eagle-gpiomux.o
 else ifdef CONFIG_MACH_SONY_TIANCHI
-	obj-$(CONFIG_MACH_SONY_TIANCHI) += board-sony_yukon_tianchi-gpiomux.o bms-batterydata-tianchi.o
+	obj-$(CONFIG_MACH_SONY_TIANCHI) += board-sony_yukon_tianchi-gpiomux.o
 else ifdef CONFIG_MACH_SONY_SEAGULL
-	obj-$(CONFIG_MACH_SONY_SEAGULL) += board-sony_yukon_seagull-gpiomux.o bms-batterydata-seagull.o
+	obj-$(CONFIG_MACH_SONY_SEAGULL) += board-sony_yukon_seagull-gpiomux.o
 else
 	obj-$(CONFIG_ARCH_MSM8226) += board-8226-gpiomux.o bms-batterydata-oem.o
 endif
@@ -61,28 +61,28 @@ endif
 obj-$(CONFIG_MACH_SONY_YUKON) += board-sony_yukon-nfc.o
 
 ifdef CONFIG_MACH_SONY_SIRIUS
-	obj-$(CONFIG_MACH_SONY_SIRIUS) += board-sony_shinano_sirius-gpiomux.o bms-batterydata-sirius.o
+	obj-$(CONFIG_MACH_SONY_SIRIUS) += board-sony_shinano_sirius-gpiomux.o
 else ifdef CONFIG_MACH_SONY_CASTOR
-	obj-$(CONFIG_MACH_SONY_CASTOR) += board-sony_shinano_castor-gpiomux.o bms-batterydata-castor.o
+	obj-$(CONFIG_MACH_SONY_CASTOR) += board-sony_shinano_castor-gpiomux.o
 else ifdef CONFIG_MACH_SONY_LEO
-	obj-$(CONFIG_MACH_SONY_LEO) += board-sony_shinano_leo-gpiomux.o bms-batterydata-leo.o
+	obj-$(CONFIG_MACH_SONY_LEO) += board-sony_shinano_leo-gpiomux.o
 else ifdef CONFIG_MACH_SONY_ARIES
-	obj-$(CONFIG_MACH_SONY_ARIES) += board-sony_shinano_aries-gpiomux.o bms-batterydata-aries.o
+	obj-$(CONFIG_MACH_SONY_ARIES) += board-sony_shinano_aries-gpiomux.o
 else ifdef CONFIG_MACH_SONY_SCORPION
-	obj-$(CONFIG_MACH_SONY_SCORPION) += board-sony_shinano_scorpion-gpiomux.o bms-batterydata-scorpion.o
+	obj-$(CONFIG_MACH_SONY_SCORPION) += board-sony_shinano_scorpion-gpiomux.o
 else ifdef CONFIG_MACH_SONY_TOGARI_ROW
-	obj-$(CONFIG_MACH_SONY_TOGARI_ROW) += board-sony_rhine_togari_row-gpiomux.o bms-batterydata-togari.o
+	obj-$(CONFIG_MACH_SONY_TOGARI_ROW) += board-sony_rhine_togari_row-gpiomux.o
 else ifdef CONFIG_MACH_SONY_HONAMI_ROW
-	obj-$(CONFIG_MACH_SONY_HONAMI_ROW) += board-sony_rhine_honami_row-gpiomux.o bms-batterydata-honami.o
+	obj-$(CONFIG_MACH_SONY_HONAMI_ROW) += board-sony_rhine_honami_row-gpiomux.o
 else ifdef CONFIG_MACH_SONY_AMAMI_ROW
-	obj-$(CONFIG_MACH_SONY_AMAMI_ROW) += board-sony_rhine_amami_row-gpiomux.o bms-batterydata-amami.o
+	obj-$(CONFIG_MACH_SONY_AMAMI_ROW) += board-sony_rhine_amami_row-gpiomux.o
 else
-	obj-$(CONFIG_ARCH_MSM8974) += board-8974-gpiomux.o bms-batterydata-oem.o
+	obj-$(CONFIG_ARCH_MSM8974) += board-8974-gpiomux.o
 endif
 
 obj-$(CONFIG_MACH_SONY_SHINANO) += board-sony_shinano-gpiomux-ref.o board-sony_shinano-nfc.o
 obj-$(CONFIG_MACH_SONY_RHINE) += board-sony_rhine-gpiomux-ref.o
-obj-$(CONFIG_ARCH_MSM8974) += sony_gpiomux.o
+obj-$(CONFIG_ARCH_MSM8974) += sony_gpiomux.o bms-batterydata-oem.o
 
 CFLAGS_msm_vibrator.o += -Idrivers/staging/android
 
